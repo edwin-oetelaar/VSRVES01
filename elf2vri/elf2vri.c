@@ -1,6 +1,6 @@
 /*
 
-  ELF2VRI converter 2025-06-18 VLSI Solution.
+  ELF2VRI converter 2025-06-19 VLSI Solution.
 
   Requires readelf to be installed if you need to convert elf files.
   Not required for binary files.
@@ -167,7 +167,7 @@ void DumpSection(struct Section *s, FILE *fp, int offset, int verbose) {
       rleRun++;
     }
   }
-  //  printf("#1 Purge non-rle %d + rle %d\n", i-base-rleRun, rleRun);
+  //    printf("#1 Purge non-rle %d + rle %d\n", i-base-rleRun, rleRun);
   {
     int literalRun = i-base-rleRun;
     /* Align literalRun to 2 longs = 8 bytes */
@@ -175,7 +175,10 @@ void DumpSection(struct Section *s, FILE *fp, int offset, int verbose) {
       rleRun--;
       literalRun++;
     }
-    if (rleRun < RLE_RUN_LIMIT_32BIT_WORDS) rleRun = 0;
+    if (rleRun < RLE_RUN_LIMIT_32BIT_WORDS) {
+      literalRun += rleRun;
+      rleRun = 0;
+    }
     addr = PurgeSections(s, fp, mySectData+base, addr, literalRun, rleRun, verbose);
     base = i;
   }
@@ -676,14 +679,14 @@ int main(int argc, char **argv) {
 
   Section, literal run:
       56 78 12 34	ADDR: Address (mixed-endian, value is 0x12345678)
-      56 78 12 34	SIZE: Literal run size in bytes
+      56 78 12 34	SIZE: Literal run size in bytes, must be divisable by 4
       00 0? 00 00	FLAGS: FL_READ 1, FL_WRITE 2, FL_EXECUTE 4, no FL_BSS 8
       00 00 00 00	EXTENSION: 0
-    n*56 78 12 34	Literal data n=SIZE/4.
+    n*56 78 12 34	Literal data, n=SIZE/4, file bytes: 0x12 0x34 0x56 0x78
 
   Section, RLE zero run:
       56 78 12 34	ADDR: Address (mixed-endian, value is 0x12345678)
-      56 78 12 34	SIZE: Literal run size in bytes
+      56 78 12 34	SIZE: RLE zero run size in bytes, must be divisable by 4
       00 0? 00 00	FLAGS: FL_READ 1, FL_WRITE 2, FL_EXECUTE 4, set FL_BSS 8
       00 00 00 00	EXTENSION: 0
 
